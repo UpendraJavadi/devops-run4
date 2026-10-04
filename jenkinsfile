@@ -1,0 +1,51 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Checking out code from GitHub...'
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                sh 'docker build -t devops-html:latest .'
+            }
+        }
+
+        stage('Stop Old Container') {
+            steps {
+                sh '''
+                    docker stop devops-html || true
+                    docker rm devops-html || true
+                '''
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying application...'
+                sh '''
+                    docker run -d \
+                    --name devops-html \
+                    -p 8080:80 \
+                    devops-html:latest
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'HTML application deployed successfully!'
+        }
+
+        failure {
+            echo 'Deployment failed!'
+        }
+    }
+}
